@@ -1,0 +1,35 @@
+# The nightly batch (was the `scheduler` sleep loop): classify new calls,
+# emails and tickets, then health recalculation, month-end snapshots and
+# reminders. Started by Cloud Scheduler at 01:30 UTC.
+apiVersion: run.googleapis.com/v1
+kind: Job
+metadata:
+  name: revenact-nightly
+  labels:
+    cloud.googleapis.com/location: asia-south1
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/network-interfaces: '[{"network":"revenact-vpc","subnetwork":"revenact-run"}]'
+        run.googleapis.com/vpc-access-egress: private-ranges-only
+    spec:
+      taskCount: 1
+      template:
+        spec:
+          serviceAccountName: run-worker@revenact-prod.iam.gserviceaccount.com
+          maxRetries: 1
+          timeoutSeconds: 3600
+          containers:
+            - name: django
+              image: ${BACKEND_IMAGE}
+              command: ["sh", "-c"]
+              args:
+                - >-
+                  python manage.py classify_interactions --limit 300 || echo 'classification failed';
+                  python manage.py run_health_maintenance
+              env: []
+              resources:
+                limits:
+                  cpu: "1"
+                  memory: 2Gi

@@ -1,0 +1,137 @@
+name: deploy
+
+# Cloud Build (in the private source repos) pushes an image to Artifact
+# Registry and sends `image-built` with its digest. This workflow records the
+# digest in releases/, runs migrations for a backend image, rolls out Cloud
+# Run, smoke-tests the public URL and rolls back if the check fails.
+on:
+  repository_dispatch:
+    types: [image-built]
+  workflow_dispatch:
+    inputs:
+      component:
+        description: "backend or frontend (leave empty to redeploy the recorded images)"
+        required: false
+      image:
+        description: "Full image reference with @sha256 digest"
+        required: false
+  push:
+    branches: [main]
+    paths: ["services/**", "scripts/**"]
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+permissions:
+  contents: write   # commit the new digest to releases/
+  id-token: write   # keyless login to GCP
+
+env:
+  PROJECT_ID: revenact-prod
+  REGION: asia-south1
+  WIF_PROVIDER: projects/605430842839/locations/global/workloadIdentityPools/github/providers/github-oidc
+  DEPLOYER_SA: gh-deployer@revenact-prod.iam.gserviceaccount.com
+  IMAGE_PREFIX: asia-south1-docker.pkg.dev/revenact-prod/revenact/
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Record the new image
+        id: record
+        env:
+          COMPONENT: ${{ github.event.client_payload.component || inputs.component }}
+          IMAGE: ${{ github.event.client_payload.image || inputs.image }}
+          COMMIT: ${{ github.event.client_payload.commit }}
+        run: |
+          set -euo pipefail
+          if [ -z "${COMPONENT}" ]; then
+            echo "component=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          case "$COMPONENT" in backend|frontend) ;; *) echo "bad component: $COMPONENT"; exit 1;; esac
+          # Only our own registry, only pinned digests.
+          [[ "$IMAGE" == "${IMAGE_PREFIX}${COMPONENT}@sha256:"* ]] || { echo "refusing image: $IMAGE"; exit 1; }
+          echo "$IMAGE" > "releases/${COMPONENT}.txt"
+          git config user.name "revenact-deploy[bot]"
+          git config user.email "revenact-deploy@users.noreply.github.com"
+          git add "releases/${COMPONENT}.txt"
+          git commit -m "release(${COMPONENT}): ${IMAGE##*@} from ${COMMIT:0:7}" || true
+          git push
+          echo "component=${COMPONENT}" >> "$GITHUB_OUTPUT"
+
+      - name: Check both images are recorded
+        id: ready
+        run: |
+          if [ -s releases/backend.txt ] && [ -s releases/frontend.txt ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Waiting for the first image of both components; nothing deployed yet."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: google-github-actions/auth@v2
+        if: steps.ready.outputs.ready == 'true'
+        with:
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOYER_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+        if: steps.ready.outputs.ready == 'true'
+
+      - name: Render service definitions
+        if: steps.ready.outputs.ready == 'true'
+        run: |
+          pip install --quiet pyyaml
+          python scripts/render.py
+
+      - name: Migrate
+        if: steps.ready.outputs.ready == 'true' && steps.record.outputs.component != 'frontend'
+        run: |
+          gcloud run jobs replace build/jobs/migrate.yaml --region "$REGION" --quiet
+          gcloud run jobs execute revenact-migrate --region "$REGION" --wait
+
+      - name: Update jobs
+        if: steps.ready.outputs.ready == 'true' && steps.record.outputs.component != 'frontend'
+        run: |
+          gcloud run jobs replace build/jobs/nightly.yaml --region "$REGION" --quiet
+
+      - name: Roll out web
+        id: rollout
+        if: steps.ready.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          PREVIOUS=$(gcloud run services describe revenact-web --region "$REGION" \
+            --format='value(status.latestReadyRevisionName)' 2>/dev/null || true)
+          echo "previous=${PREVIOUS}" >> "$GITHUB_OUTPUT"
+          gcloud run services replace build/web.yaml --region "$REGION" --quiet
+          URL=$(gcloud run services describe revenact-web --region "$REGION" --format='value(status.url)')
+          echo "url=${URL}" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke test
+        id: smoke
+        if: steps.ready.outputs.ready == 'true'
+        env:
+          URL: ${{ steps.rollout.outputs.url }}
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 10); do
+            if curl -fsS "$URL/api/v1/health/" >/dev/null && curl -fsS "$URL/" | grep -qi "<div id=\"root\""; then
+              echo "healthy: $URL"; exit 0
+            fi
+            sleep 6
+          done
+          echo "smoke test failed"; exit 1
+
+      - name: Roll back
+        if: failure() && steps.rollout.outputs.previous != ''
+        env:
+          PREVIOUS: ${{ steps.rollout.outputs.previous }}
+        run: |
+          gcloud run services update-traffic revenact-web --region "$REGION" --to-revisions "${PREVIOUS}=100"
+          echo "::error::Rolled back to ${PREVIOUS}"

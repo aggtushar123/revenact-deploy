@@ -1,0 +1,29 @@
+# Runs before every backend rollout.
+apiVersion: run.googleapis.com/v1
+kind: Job
+metadata:
+  name: revenact-migrate
+  labels:
+    cloud.googleapis.com/location: asia-south1
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/network-interfaces: '[{"network":"revenact-vpc","subnetwork":"revenact-run"}]'
+        run.googleapis.com/vpc-access-egress: private-ranges-only
+    spec:
+      taskCount: 1
+      template:
+        spec:
+          serviceAccountName: run-worker@revenact-prod.iam.gserviceaccount.com
+          maxRetries: 0
+          timeoutSeconds: 1800
+          containers:
+            - name: django
+              image: ${BACKEND_IMAGE}
+              command: ["python", "manage.py", "migrate", "--noinput"]
+              env: []
+              resources:
+                limits:
+                  cpu: "1"
+                  memory: 2Gi

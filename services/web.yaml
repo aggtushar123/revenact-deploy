@@ -1,0 +1,63 @@
+# The public app: one URL, one origin. nginx (frontend image) is the ingress
+# container on 8080 and serves the React build; it proxies /api, /ws, /admin
+# and /static to Django (Daphne) running as a sidecar on 127.0.0.1:8000.
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: revenact-web
+  labels:
+    cloud.googleapis.com/location: asia-south1
+  annotations:
+    run.googleapis.com/ingress: all
+    # Public app: anyone may reach it; the app does its own auth.
+    run.googleapis.com/invoker-iam-disabled: "true"
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "0"
+        # Also a spend cap and keeps Cloud SQL connections bounded.
+        autoscaling.knative.dev/maxScale: "3"
+        run.googleapis.com/sessionAffinity: "true"
+        run.googleapis.com/startup-cpu-boost: "true"
+        run.googleapis.com/execution-environment: gen2
+        run.googleapis.com/network-interfaces: '[{"network":"revenact-vpc","subnetwork":"revenact-run"}]'
+        run.googleapis.com/vpc-access-egress: private-ranges-only
+        run.googleapis.com/container-dependencies: '{"nginx":["django"]}'
+    spec:
+      serviceAccountName: run-web@revenact-prod.iam.gserviceaccount.com
+      containerConcurrency: 80
+      # WebSockets live at most this long; the client reconnects.
+      timeoutSeconds: 3600
+      containers:
+        - name: nginx
+          image: ${FRONTEND_IMAGE}
+          ports:
+            - name: http1
+              containerPort: 8080
+          resources:
+            limits:
+              cpu: "1"
+              memory: 256Mi
+          startupProbe:
+            httpGet:
+              path: /nginx-health
+              port: 8080
+            periodSeconds: 2
+            failureThreshold: 15
+        - name: django
+          image: ${BACKEND_IMAGE}
+          env: []  # filled from env.yaml by scripts/render.py
+          resources:
+            limits:
+              cpu: "1"
+              memory: 2Gi
+          startupProbe:
+            httpGet:
+              path: /api/v1/health/
+              port: 8000
+            periodSeconds: 3
+            failureThreshold: 40
+  traffic:
+    - latestRevision: true
+      percent: 100
