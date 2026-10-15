@@ -30,6 +30,7 @@ locals {
     "atlassian-oauth-client-secret", # Jira connector
     "microsoft-oauth-client-secret", # Outlook (not in focus; empty is fine)
     "github-dispatch-token",         # Cloud Build -> revenact-deploy dispatch
+    "alfee-demo-password",           # the judges' Alfee logins (seed-alfee job only)
   ]
 
   # Which runtime service accounts may read which secrets.
@@ -101,4 +102,11 @@ resource "google_secret_manager_secret_iam_member" "builder_dispatch" {
   secret_id = google_secret_manager_secret.manual["github-dispatch-token"].id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.builder.email}"
+}
+
+# Only the worker identity (the seed-alfee job) reads the demo password.
+resource "google_secret_manager_secret_iam_member" "seed_password" {
+  secret_id = google_secret_manager_secret.manual["alfee-demo-password"].id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.worker.email}"
 }

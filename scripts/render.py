@@ -1,7 +1,8 @@
 """Render services/*.yaml for `gcloud run ... replace`.
 
 Substitutes ${BACKEND_IMAGE} / ${FRONTEND_IMAGE} from releases/*.txt and fills
-every container named "django" with the environment in services/env.yaml.
+every container named "django" with the environment in services/env.yaml,
+followed by any env entries the file itself gives that container.
 Writes the results to build/ with the same relative paths.
 """
 
@@ -32,7 +33,9 @@ def django_env() -> list[dict]:
 def fill(node, env):
     if isinstance(node, dict):
         if node.get("name") == "django" and "image" in node:
-            node["env"] = env
+            # The shared environment, then whatever the file itself declares
+            # (e.g. the seed job's ALFEE_DEMO_PASSWORD).
+            node["env"] = env + (node.get("env") or [])
         for value in node.values():
             fill(value, env)
     elif isinstance(node, list):

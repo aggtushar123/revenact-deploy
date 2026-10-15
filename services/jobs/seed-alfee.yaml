@@ -1,0 +1,37 @@
+# Seeds the Alfee workspace (backend `manage.py seed_alfee`): the demo book
+# with the team's own logins, every password ALFEE_DEMO_PASSWORD from Secret
+# Manager. Idempotent. Created by each deploy, executed only by hand:
+#   gcloud run jobs execute revenact-seed-alfee --region asia-south1 --wait
+apiVersion: run.googleapis.com/v1
+kind: Job
+metadata:
+  name: revenact-seed-alfee
+  labels:
+    cloud.googleapis.com/location: asia-south1
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/network-interfaces: '[{"network":"revenact-vpc","subnetwork":"revenact-run"}]'
+        run.googleapis.com/vpc-access-egress: private-ranges-only
+    spec:
+      taskCount: 1
+      template:
+        spec:
+          serviceAccountName: run-worker@revenact-prod.iam.gserviceaccount.com
+          maxRetries: 0
+          timeoutSeconds: 1800
+          containers:
+            - name: django
+              image: ${BACKEND_IMAGE}
+              command: ["python", "manage.py", "seed_alfee"]
+              env:
+                - name: ALFEE_DEMO_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: alfee-demo-password
+                      key: latest
+              resources:
+                limits:
+                  cpu: "1"
+                  memory: 2Gi

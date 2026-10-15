@@ -100,6 +100,8 @@ jobs:
         if: steps.ready.outputs.ready == 'true' && steps.record.outputs.component != 'frontend'
         run: |
           gcloud run jobs replace build/jobs/nightly.yaml --region "$REGION" --quiet
+          # Created or updated here, never executed by a deploy: run it by hand.
+          gcloud run jobs replace build/jobs/seed-alfee.yaml --region "$REGION" --quiet
 
       - name: Roll out web
         id: rollout
