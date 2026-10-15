@@ -110,7 +110,9 @@ jobs:
             --format='value(status.latestReadyRevisionName)' 2>/dev/null || true)
           echo "previous=${PREVIOUS}" >> "$GITHUB_OUTPUT"
           gcloud run services replace build/web.yaml --region "$REGION" --quiet
-          URL=$(gcloud run services describe revenact-web --region "$REGION" --format='value(status.url)')
+          # The deterministic URL (the one in ALLOWED_HOSTS and given out), not
+          # status.url's legacy *.a.run.app address, which Django refuses.
+          URL="https://revenact-web-605430842839.${REGION}.run.app"
           echo "url=${URL}" >> "$GITHUB_OUTPUT"
 
       - name: Smoke test
