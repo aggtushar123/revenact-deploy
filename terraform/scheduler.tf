@@ -29,10 +29,9 @@ resource "google_cloud_scheduler_job" "tick" {
   time_zone        = "Etc/UTC"
   attempt_deadline = each.value.deadline
 
-  # The next tick is the retry.
-  retry_config {
-    retry_count = 0
-  }
+  # No retry_config: Scheduler's default is no retries (and it does not echo
+  # retry_count = 0 back, so setting it is a permanent diff). The next tick
+  # is the retry.
 
   http_target {
     http_method = "POST"
