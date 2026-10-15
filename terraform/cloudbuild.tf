@@ -30,19 +30,28 @@ resource "google_cloudbuild_trigger" "image" {
 
 # CI: every pull request to main runs the repo's cloudbuild-ci.yaml (lint and
 # the tests; no secrets, nothing pushed). The Cloud Build GitHub app reports
-# the result on the PR as a check. Pull requests from people without write
-# access wait for a maintainer's `/gcbrun` comment before anything runs.
-resource "google_cloudbuild_trigger" "pr" {
-  for_each = google_cloudbuildv2_repository.source
+# each build on the PR as a check. The backend suite runs as 4 shards, one
+# build (and one 8-core machine) each, as GitHub Actions did. Pull requests
+# from people without write access wait for a maintainer's `/gcbrun` comment.
+locals {
+  ci_builds = merge(
+    { for n in range(1, 5) : "backend-pr-${n}" => { repo = "backend", subs = { _SHARD = tostring(n), _SHARDS = "4" } } },
+    { "frontend-pr" = { repo = "frontend", subs = {} } },
+  )
+}
 
-  name            = "${each.key}-pr"
+resource "google_cloudbuild_trigger" "pr" {
+  for_each = var.github_connection == "" ? {} : local.ci_builds
+
+  name            = each.key
   location        = var.region
-  description     = "CI for ${each.key} pull requests to main"
+  description     = "CI for ${each.value.repo} pull requests to main"
   service_account = google_service_account.builder.id
   filename        = "cloudbuild-ci.yaml"
+  substitutions   = each.value.subs
 
   repository_event_config {
-    repository = each.value.id
+    repository = google_cloudbuildv2_repository.source[each.value.repo].id
     pull_request {
       branch          = "^main$"
       comment_control = "COMMENTS_ENABLED_FOR_EXTERNAL_CONTRIBUTORS_ONLY"
