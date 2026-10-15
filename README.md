@@ -26,7 +26,9 @@ private repo push to main
 | Files | Cloud Storage, private, uniform access |
 | AI | Vertex AI Gemini (no API keys; Cloud Run's service account) |
 | Secrets | Secret Manager, one secret per value, per-service access |
-| Batch | Cloud Run Jobs started by Cloud Scheduler |
+| Batch | The nightly Cloud Run Job, started by Cloud Scheduler |
+| Background loops | Cloud Scheduler ticks (mail, deliver: every minute; agents: 5 min; tickets: 10 min) POST to the web service, OIDC-signed as run-invoker (backend `core/ticks.py`) |
+| Gmail push | Pub/Sub topic `gmail-push` → push subscription to `/api/v1/mail/google/push/`, which syncs the woken mailbox inline |
 
 Region: `asia-south1` (Mumbai). Project: `revenact-prod`.
 
