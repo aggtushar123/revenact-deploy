@@ -27,3 +27,25 @@ resource "google_cloudbuild_trigger" "image" {
     }
   }
 }
+
+# CI: every pull request to main runs the repo's cloudbuild-ci.yaml (lint and
+# the tests; no secrets, nothing pushed). The Cloud Build GitHub app reports
+# the result on the PR as a check. Pull requests from people without write
+# access wait for a maintainer's `/gcbrun` comment before anything runs.
+resource "google_cloudbuild_trigger" "pr" {
+  for_each = google_cloudbuildv2_repository.source
+
+  name            = "${each.key}-pr"
+  location        = var.region
+  description     = "CI for ${each.key} pull requests to main"
+  service_account = google_service_account.builder.id
+  filename        = "cloudbuild-ci.yaml"
+
+  repository_event_config {
+    repository = each.value.id
+    pull_request {
+      branch          = "^main$"
+      comment_control = "COMMENTS_ENABLED_FOR_EXTERNAL_CONTRIBUTORS_ONLY"
+    }
+  }
+}
