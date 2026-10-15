@@ -13,9 +13,11 @@ variable "billing_account" {
   type        = string
 }
 
-variable "monthly_budget_usd" {
+# In the billing account's own currency (INR; a budget in any other
+# currency is refused). About USD 100.
+variable "monthly_budget_inr" {
   type    = number
-  default = 100
+  default = 8800
 }
 
 variable "github_owner" {

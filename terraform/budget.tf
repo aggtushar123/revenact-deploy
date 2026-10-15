@@ -11,8 +11,8 @@ resource "google_billing_budget" "monthly" {
 
   amount {
     specified_amount {
-      currency_code = "USD"
-      units         = tostring(var.monthly_budget_usd)
+      currency_code = "INR"
+      units         = tostring(var.monthly_budget_inr)
     }
   }
 
