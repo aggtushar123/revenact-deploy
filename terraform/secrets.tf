@@ -26,6 +26,7 @@ locals {
     "email-host-password",           # Gmail app password
     "google-oauth-client-secret",    # Gmail connections
     "slack-oauth-client-secret",     # Slack connector
+    "atlassian-oauth-client-secret", # Jira connector
     "microsoft-oauth-client-secret", # Outlook (not in focus; empty is fine)
     "github-dispatch-token",         # Cloud Build -> revenact-deploy dispatch
   ]
@@ -35,6 +36,7 @@ locals {
     "email-host-password",
     "google-oauth-client-secret",
     "slack-oauth-client-secret",
+    "atlassian-oauth-client-secret",
     "microsoft-oauth-client-secret",
   ])
 }

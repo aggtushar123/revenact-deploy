@@ -60,6 +60,7 @@ printf '%s' "$VALUE" | gcloud secrets versions add email-host-password --data-fi
 printf '%s' "$VALUE" | gcloud secrets versions add github-dispatch-token --data-file=-
 printf '%s' "$VALUE" | gcloud secrets versions add google-oauth-client-secret --data-file=-
 printf '%s' "$VALUE" | gcloud secrets versions add slack-oauth-client-secret --data-file=-
+printf '%s' "$VALUE" | gcloud secrets versions add atlassian-oauth-client-secret --data-file=-
 ```
 
 `github-dispatch-token` is a fine-grained GitHub token limited to this
