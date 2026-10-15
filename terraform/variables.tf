@@ -43,7 +43,7 @@ variable "source_repos" {
 variable "github_connection" {
   description = "Name of the Cloud Build GitHub connection, created once with gcloud (needs a browser OAuth step). Empty until then; triggers are only created once it is set."
   type        = string
-  default     = ""
+  default     = "projects/revenact-prod/locations/asia-south1/connections/revenact-github"
 }
 
 variable "db_tier" {
