@@ -24,6 +24,7 @@ locals {
 
   manual_secrets = [
     "email-host-password",           # Gmail app password
+    "email-host-user",               # the Gmail address it belongs to (kept out of this public repo)
     "google-oauth-client-secret",    # Gmail connections
     "slack-oauth-client-secret",     # Slack connector
     "atlassian-oauth-client-secret", # Jira connector
@@ -34,6 +35,7 @@ locals {
   # Which runtime service accounts may read which secrets.
   app_secrets = concat(keys(local.generated_secrets), [
     "email-host-password",
+    "email-host-user",
     "google-oauth-client-secret",
     "slack-oauth-client-secret",
     "atlassian-oauth-client-secret",
