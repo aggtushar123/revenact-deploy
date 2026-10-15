@@ -29,14 +29,18 @@ resource "google_cloudbuild_trigger" "image" {
 }
 
 # CI: every pull request to main runs the repo's cloudbuild-ci.yaml (lint and
-# the tests; no secrets, nothing pushed). The Cloud Build GitHub app reports
-# each build on the PR as a check. The backend suite runs as 4 shards, one
-# build (and one 8-core machine) each, as GitHub Actions did. Pull requests
-# from people without write access wait for a maintainer's `/gcbrun` comment.
+# the tests) and cloudbuild-soc2.yaml (the SOC 2 security gates: gitleaks,
+# dependency audit, semgrep, trivy, the heuristic scan). No secrets, nothing
+# pushed. The Cloud Build GitHub app reports each build on the PR as a check.
+# The backend suite runs as 4 shards, one build (and one 8-core machine) each.
+# Pull requests from people without write access wait for a maintainer's
+# `/gcbrun` comment. These replace the repos' GitHub Actions workflows.
 locals {
   ci_builds = merge(
-    { for n in range(1, 5) : "backend-pr-${n}" => { repo = "backend", subs = { _SHARD = tostring(n), _SHARDS = "4" } } },
-    { "frontend-pr" = { repo = "frontend", subs = {} } },
+    { for n in range(1, 5) : "backend-pr-${n}" => { repo = "backend", file = "cloudbuild-ci.yaml", subs = { _SHARD = tostring(n), _SHARDS = "4" } } },
+    { "frontend-pr" = { repo = "frontend", file = "cloudbuild-ci.yaml", subs = {} } },
+    { "backend-soc2" = { repo = "backend", file = "cloudbuild-soc2.yaml", subs = {} } },
+    { "frontend-soc2" = { repo = "frontend", file = "cloudbuild-soc2.yaml", subs = {} } },
   )
 }
 
@@ -47,7 +51,7 @@ resource "google_cloudbuild_trigger" "pr" {
   location        = var.region
   description     = "CI for ${each.value.repo} pull requests to main"
   service_account = google_service_account.builder.id
-  filename        = "cloudbuild-ci.yaml"
+  filename        = each.value.file
   substitutions   = each.value.subs
 
   repository_event_config {
