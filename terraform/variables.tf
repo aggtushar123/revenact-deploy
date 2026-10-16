@@ -51,9 +51,3 @@ variable "db_tier" {
   type        = string
   default     = "db-g1-small"
 }
-
-variable "alert_emails" {
-  description = "Who Cloud Monitoring alerts email (none: the alerts exist but notify nobody)."
-  type        = list(string)
-  default     = []
-}

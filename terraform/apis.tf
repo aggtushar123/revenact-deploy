@@ -11,7 +11,6 @@ locals {
     "iam.googleapis.com",
     "iamcredentials.googleapis.com",
     "memorystore.googleapis.com",
-    "monitoring.googleapis.com",
     "networkconnectivity.googleapis.com",
     "pubsub.googleapis.com",
     "run.googleapis.com",
