@@ -27,7 +27,8 @@ spec:
               args:
                 - >-
                   python manage.py classify_interactions --limit 300 || echo 'classification failed';
-                  python manage.py run_health_maintenance
+                  python manage.py run_health_maintenance;
+                  python manage.py run_copilot_evals || echo 'copilot evals failed'
               env: []
               resources:
                 limits:
