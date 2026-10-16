@@ -1,0 +1,36 @@
+name: smoke
+
+# A real browser against production: daily, after each deploy, and on
+# demand. Free on this public repository's GitHub Actions; no GCP cost.
+# Secrets SMOKE_EMAIL / SMOKE_PASSWORD: a test user (none: app + health only).
+on:
+  schedule:
+    - cron: "15 3 * * *"
+  workflow_run:
+    workflows: [deploy]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: smoke
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: node smoke.mjs
+        env:
+          SMOKE_BASE_URL: https://revenact-web-605430842839.asia-south1.run.app
+          SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
+          SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
