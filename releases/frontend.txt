@@ -1,1 +1,1 @@
-asia-south1-docker.pkg.dev/revenact-prod/revenact/frontend@sha256:8a0a68cfc4e2a40b520bac51b30cb054f9f1a621f70ee95fee533d53af09b426
+asia-south1-docker.pkg.dev/revenact-prod/revenact/frontend@sha256:8f0cee7e7750fce90e2999601b4c38ccb41431036e5090c2f7729b1488b23a65
