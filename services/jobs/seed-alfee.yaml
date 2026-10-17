@@ -1,4 +1,4 @@
-# Seeds the Alfee workspace (backend `manage.py seed_alfee`): the demo book
+# Seeds the Alfred workspace (formerly Alfee; renamed in place on first run) (backend `manage.py seed_alfee`): the demo book
 # with the team's own logins, every password ALFEE_DEMO_PASSWORD from Secret
 # Manager. Idempotent. Created by each deploy, executed only by hand:
 #   gcloud run jobs execute revenact-seed-alfee --region asia-south1 --wait
