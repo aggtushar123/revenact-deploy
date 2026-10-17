@@ -4,3 +4,4 @@
 crash.log
 terraform.tfvars
 build/
+node_modules/
