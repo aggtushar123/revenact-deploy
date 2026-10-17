@@ -32,6 +32,7 @@ locals {
     "microsoft-oauth-client-secret", # Outlook (not in focus; empty is fine)
     "github-dispatch-token",         # Cloud Build -> revenact-deploy dispatch
     "alfee-demo-password",           # the judges' Alfee logins (seed-alfee job only)
+    "platform-staff-password",       # the /platform staff superuser; read by people only, no runtime access
   ]
 
   # Which runtime service accounts may read which secrets.
@@ -111,4 +112,10 @@ resource "google_secret_manager_secret_iam_member" "seed_password" {
   secret_id = google_secret_manager_secret.manual["alfee-demo-password"].id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.worker.email}"
+}
+
+# Created by hand on 2026-10-17 to bootstrap the first platform staff account.
+import {
+  to = google_secret_manager_secret.manual["platform-staff-password"]
+  id = "projects/revenact-prod/secrets/platform-staff-password"
 }
