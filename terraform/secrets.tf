@@ -14,12 +14,24 @@ resource "random_bytes" "mail_token_key" {
   length = 32
 }
 
+# The shared secret the Alfred site (tryalfred.co, hosted apart from this
+# project) sends as X-Alfred-Site-Key on the public waitlist endpoints. It is
+# the only thing gating them, so it is generated here rather than chosen by
+# hand, and alphanumeric because it is carried in an HTTP header. Read it out
+# once for the site's own environment with:
+#   gcloud secrets versions access latest --secret=waitlist-site-key
+resource "random_password" "waitlist_site_key" {
+  length  = 48
+  special = false
+}
+
 locals {
   generated_secrets = {
     "django-secret-key" = random_password.django_secret_key.result
     "database-url"      = "postgres://${google_sql_user.app.name}:${random_password.db.result}@${google_sql_database_instance.db.private_ip_address}:5432/${google_sql_database.app.name}?sslmode=require"
     # A Fernet key is url-safe base64 of 32 random bytes.
-    "mail-token-key" = replace(replace(random_bytes.mail_token_key.base64, "+", "-"), "/", "_")
+    "mail-token-key"    = replace(replace(random_bytes.mail_token_key.base64, "+", "-"), "/", "_")
+    "waitlist-site-key" = random_password.waitlist_site_key.result
   }
 
   manual_secrets = [
