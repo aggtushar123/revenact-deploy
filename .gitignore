@@ -4,4 +4,4 @@
 crash.log
 terraform.tfvars
 build/
-smoke/node_modules/
+node_modules/
