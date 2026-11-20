@@ -27,6 +27,7 @@ private repo push to main
 | AI | Vertex AI Gemini (no API keys; Cloud Run's service account) |
 | Secrets | Secret Manager, one secret per value, per-service access |
 | Batch | The nightly Cloud Run Job, started by Cloud Scheduler |
+| Analytics | BigQuery dataset `revenact_warehouse`: the nightly job's de-identified export, per-tenant BigQuery ML churn models (scores written back to Cloud SQL), AI usage views |
 | Background loops | Cloud Scheduler ticks (mail, deliver: every minute; agents: 5 min; tickets: 10 min) POST to the web service, OIDC-signed as run-invoker (backend `core/ticks.py`) |
 | Gmail push | Pub/Sub topic `gmail-push` → push subscription to `/api/v1/mail/google/push/`, which syncs the woken mailbox inline |
 
