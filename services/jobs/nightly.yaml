@@ -1,6 +1,7 @@
 # The nightly batch (was the `scheduler` sleep loop): classify new calls,
 # emails and tickets, then health recalculation, month-end snapshots and
-# reminders. Started by Cloud Scheduler at 01:30 UTC.
+# reminders, then the BigQuery warehouse (export, per-tenant churn models,
+# scores written back). Started by Cloud Scheduler at 01:30 UTC.
 apiVersion: run.googleapis.com/v1
 kind: Job
 metadata:
@@ -28,7 +29,8 @@ spec:
                 - >-
                   python manage.py classify_interactions --limit 300 || echo 'classification failed';
                   python manage.py run_health_maintenance;
-                  python manage.py run_copilot_evals || echo 'copilot evals failed'
+                  python manage.py run_copilot_evals || echo 'copilot evals failed';
+                  python manage.py sync_warehouse || echo 'warehouse sync failed'
               env: []
               resources:
                 limits:
