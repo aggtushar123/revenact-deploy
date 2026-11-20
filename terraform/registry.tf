@@ -2,7 +2,7 @@ resource "google_artifact_registry_repository" "images" {
   repository_id = "revenact"
   location      = var.region
   format        = "DOCKER"
-  description   = "Revenact backend and frontend images (private)."
+  description   = "Alfred backend and frontend images (private)."
 
   cleanup_policy_dry_run = false
 

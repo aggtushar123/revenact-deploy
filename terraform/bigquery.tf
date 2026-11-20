@@ -5,7 +5,7 @@
 # Cloud SQL. The app never queries BigQuery on a request.
 resource "google_bigquery_dataset" "warehouse" {
   dataset_id    = "revenact_warehouse"
-  friendly_name = "Revenact warehouse"
+  friendly_name = "Alfred warehouse"
   description   = "Nightly de-identified copy of the app database, churn models and AI usage views."
   location      = var.region
 
