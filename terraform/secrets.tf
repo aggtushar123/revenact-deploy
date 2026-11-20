@@ -39,7 +39,7 @@ locals {
     "email-host-user",               # the Gmail address it belongs to (kept out of this public repo)
     "google-oauth-client-secret",    # Gmail connections
     "slack-oauth-client-secret",     # Slack connector
-    "slack-signing-secret",          # Slack interactivity (Send to Revenact) request signatures
+    "slack-signing-secret",          # Slack interactivity (Send to Alfred) request signatures
     "atlassian-oauth-client-secret", # Jira connector
     "microsoft-oauth-client-secret", # Outlook (not in focus; empty is fine)
     "github-dispatch-token",         # Cloud Build -> revenact-deploy dispatch

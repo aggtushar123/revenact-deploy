@@ -1,6 +1,6 @@
 # revenact-deploy
 
-How Revenact runs on Google Cloud. The application source lives in private
+How Alfred runs on Google Cloud. The application source lives in private
 repositories; this public repository holds only the infrastructure (Terraform)
 and the release pipeline, and records which image digest is live.
 
