@@ -30,7 +30,8 @@ spec:
                   python manage.py classify_interactions --limit 300 || echo 'classification failed';
                   python manage.py run_health_maintenance;
                   python manage.py run_copilot_evals || echo 'copilot evals failed';
-                  python manage.py sync_warehouse || echo 'warehouse sync failed'
+                  python manage.py sync_warehouse || echo 'warehouse sync failed';
+                  python manage.py report_jira_accounts || echo 'jira privacy report failed'
               env: []
               resources:
                 limits:
